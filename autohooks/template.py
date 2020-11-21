@@ -25,6 +25,19 @@ from autohooks.utils import get_autohooks_directory_path
 PYTHON3_SHEBANG = '/usr/bin/env python3'
 PIPENV_SHEBANG = '/usr/bin/env -S pipenv run python3'
 POETRY_SHEBANG = '/usr/bin/env -S poetry run python3'
+# For OS's that don't support '/usr/bin/env -S'.
+PIPENV_MULTILINE_SHEBANG = "/usr/bin/env sh\n\
+\"true\" ''':'\n\
+pipenv run python3 \"$0\" \"$@\"\n\
+exit 127\n\
+'''\
+"
+POETRY_MULTILINE_SHEBANG = "/usr/bin/env sh\n\
+\"true\" ''':'\n\
+poetry run python3 \"$0\" \"$@\"\n\
+exit 127\n\
+'''\
+"
 
 TEMPLATE_VERSION = 1
 
