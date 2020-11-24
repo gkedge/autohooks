@@ -31,10 +31,10 @@ class Mode(Enum):
         # pylint: disable=comparison-with-callable
         if self.value == Mode.PIPENV.value:
             return Mode.PIPENV
-        if self.value == Mode.POETRY.value:
-            return Mode.POETRY
         if self.value == Mode.PIPENV_MULTILINE.value:
             return Mode.PIPENV_MULTILINE
+        if self.value == Mode.POETRY.value:
+            return Mode.POETRY
         if self.value == Mode.POETRY_MULTILINE.value:
             return Mode.POETRY_MULTILINE
         return Mode.PYTHONPATH
