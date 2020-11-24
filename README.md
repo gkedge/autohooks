@@ -17,7 +17,9 @@ Welcome to **autohooks**!
 - [Modes](#modes)
   - [Pythonpath Mode](#pythonpath-mode)
   - [Pipenv Mode](#pipenv-mode)
+  - [Pipenv Multi-Line  Mode](#pipenv-multi-line-mode)
   - [Poetry Mode](#poetry-mode)
+  - [Poetry Multi-Line  Mode](#poetry-multi-line-mode)
 - [Installing autohooks](#installing-autohooks)
   - [1. Choosing an autohooks Mode](#1-choosing-an-autohooks-mode)
   - [2. Installing the autohooks Python Package into the Current Environment](#2-installing-the-autohooks-python-package-into-the-current-environment)
@@ -57,11 +59,13 @@ autohooks supports Python 3.5+. For development Python 3.6+ is required.
 
 ## Modes
 
-Currently three modes for using autohooks are supported:
+Currently five modes for using autohooks are supported:
 
 * `pythonpath`
 * `pipenv`
+* `pipenv_mutiline`
 * `poetry`
+* `poetry_mutiline`
 
 These modes handle how autohooks, the plugins and their dependencies are loaded
 during git hook execution.
@@ -110,12 +114,40 @@ installation is deterministic and reliable between different developer setups.
 In contrast to the `pythonpath` mode the activation of the virtual environment
 provided by [pipenv] is done automatically in the background.
 
+*NOTE:* If `pipenv` mode is configured on an OS that has a
+`/usr/bin/env` command that does not support the `-S` split string
+option, `autohooks` will automatically change to `pipenv_multiline`
+mode.
+
+### Pipenv Multi-Line Mode
+
+Identical behavior to [pipenv mode](#pipenv-mode). By using
+`pipenv__multiline` mode, the virtual environment will be activated
+automatically for an `/usr/bin/env` command that does not support the
+`-S` split string option when executing the autohooks based git commit
+hook.
+
 ### Poetry Mode
 
 Like with the [pipenv mode](#pipenv-mode), it is possible to run autohooks in a
 dedicated environment controlled by [poetry]. By using the `poetry` mode the
 virtual environment will be activated automatically in the background when
 executing the autohooks based git commit hook.
+
+Using the `poetry` mode is highly recommended.
+
+*NOTE:* If `poetry` mode is configured on an OS that has a
+`/usr/bin/env` command that does not support the `-S` split string
+option, `autohooks` will automatically change to `poetry_multiline`
+mode.
+
+### Poetry Multi-Line Mode
+
+Identical behavior to [poetry mode](#poetry-mode). By using
+`poetry__multiline` mode, the virtual environment will be activated
+automatically for an `/usr/bin/env` command that does not support the
+`-S` split string option when executing the autohooks based git commit
+hook.
 
 Using the `poetry` mode is highly recommended.
 
