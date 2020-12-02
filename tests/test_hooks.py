@@ -14,15 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from math import floor, ceil
 import os
+import re
 import tempfile
+from typing import Optional
 import unittest
 
 from unittest.mock import Mock
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+from regex.regex import Match
 
 from autohooks.hooks import PreCommitHook, get_pre_commit_hook_path
 from autohooks.settings import Mode
@@ -116,11 +120,37 @@ class IsCurrentAutohooksPreCommitHook(unittest.TestCase):
 
         self.assertTrue(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
-    def test_modified_pre_commit_template(self):
+    def test_removed_pre_commit_template(self):
         template = PreCommitTemplate()
         rendered = template.render(mode=Mode.PIPENV)
         lines = rendered.split('\n')
         lines[1] = ""
+        path = FakeReadPath("\n".join(lines))
+        pre_commit_hook = PreCommitHook(path)
+
+        self.assertFalse(pre_commit_hook.is_current_autohooks_pre_commit_hook())
+
+    def test_floor_pre_commit_template(self):
+        template = PreCommitTemplate()
+        rendered = template.render(mode=Mode.PIPENV)
+        lines = rendered.split('\n')
+        match: Optional[Match] = re.search(r'(\d+\.*\d*)', lines[1])
+        hook_version_str = match.group(1)
+        hooks_version = floor(float(hook_version_str))
+        lines[1] = lines[1].replace(hook_version_str, str(hooks_version))
+        path = FakeReadPath("\n".join(lines))
+        pre_commit_hook = PreCommitHook(path)
+
+        self.assertTrue(pre_commit_hook.is_current_autohooks_pre_commit_hook())
+
+    def test_ceiling_pre_commit_template(self):
+        template = PreCommitTemplate()
+        rendered = template.render(mode=Mode.PIPENV)
+        lines = rendered.split('\n')
+        match: Optional[Match] = re.search(r'(\d+\.*\d*)', lines[1])
+        hook_version_str = match.group(1)
+        hooks_version = ceil(float(hook_version_str) + 0.001)
+        lines[1] = lines[1].replace(hook_version_str, str(hooks_version))
         path = FakeReadPath("\n".join(lines))
         pre_commit_hook = PreCommitHook(path)
 
@@ -144,13 +174,19 @@ class ReadVersionTestCase(unittest.TestCase):
         path = FakeReadPath("")
         pre_commit_hook = PreCommitHook(path)
 
-        self.assertEqual(pre_commit_hook.read_version(), -1)
+        self.assertEqual(0, pre_commit_hook.read_version())
+
+    def test_no_toml(self):
+        path = FakeReadPath("\n# \n")
+        pre_commit_hook = PreCommitHook(path)
+
+        self.assertEqual(0, pre_commit_hook.read_version())
 
     def test_no_meta(self):
         path = FakeReadPath("\n# foo = bar")
         pre_commit_hook = PreCommitHook(path)
 
-        self.assertEqual(pre_commit_hook.read_version(), -1)
+        self.assertEqual(0, pre_commit_hook.read_version())
 
 
 class ReadModeTestCase(unittest.TestCase):

@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from math import ceil, floor
 from pathlib import Path
 import re
 
@@ -60,7 +60,9 @@ class PreCommitHook:
         return len(lines) > 5 and "autohooks.precommit" in self.pre_commit_hook
 
     def is_current_autohooks_pre_commit_hook(self) -> bool:
-        return self.read_version() == TEMPLATE_VERSION
+        hook_version: float = self.read_version()
+        template_ver = TEMPLATE_VERSION + 0.001
+        return floor(template_ver) <= hook_version < ceil(template_ver)
 
     def read_mode(self) -> Mode:
         lines = self.pre_commit_hook.split('\n')
@@ -85,14 +87,16 @@ class PreCommitHook:
 
         return Mode.UNKNOWN
 
-    def read_version(self) -> int:
+    def read_version(self) -> float:
         matches = re.search(
-            r'{\s*version\s*=\s*?(\d+)\s*}$', self.pre_commit_hook, re.MULTILINE
+            r'{\s*version\s*=\s*?(\d+\.*\d*)\s*}$',
+            self.pre_commit_hook,
+            re.MULTILINE,
         )
         if not matches:
-            return -1
+            return 0
 
-        return int(matches.group(1))
+        return float(matches.group(1))
 
     def write(self, *, mode: Mode) -> None:
         template = PreCommitTemplate()
