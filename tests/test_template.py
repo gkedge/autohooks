@@ -30,7 +30,7 @@ import sys
 
 try:
     from autohooks.precommit import run
-    sys.exit(run())
+    sys.exit(run(sys.argv))
 except ImportError:
     print(
         "Error: autohooks is not installed. To force creating a commit without "
