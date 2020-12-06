@@ -17,10 +17,11 @@
 
 import importlib
 import inspect
+from pathlib import Path
 import sys
 
 from types import ModuleType
-from typing import Generator
+from typing import Generator, List, Optional
 
 from contextlib import contextmanager
 
@@ -80,18 +81,24 @@ def check_hook_mode(term: Terminal, config_mode: Mode, hook_mode: Mode) -> None:
         )
 
 
-def run() -> int:
+def run(
+    version: float,
+    args: Optional[List[str]] = None,
+    pre_commit_hook_path: Optional[Path] = None,
+) -> int:
+    git_hook_name = Path(args[0]).stem if args else 'pre-commit'
+
     term = Terminal()
 
     _set_terminal(term)
 
     config = load_config_from_pyproject_toml()
 
-    pre_commit_hook = PreCommitHook()
+    pre_commit_hook = PreCommitHook(pre_commit_hook_path, version=version)
 
     check_hook_is_current(term, pre_commit_hook)
 
-    if config.has_autohooks_config():
+    if config.has_autohooks_config() and not git_hook_name.endswith('-test'):
         check_hook_mode(term, config.get_mode(), pre_commit_hook.read_mode())
 
     plugins = get_project_autohooks_plugins_path()
@@ -100,11 +107,13 @@ def run() -> int:
     if plugins.is_dir():
         sys.path.append(plugins_dir_name)
 
-    term.bold_info('autohooks => pre-commit')
+    term.bold_info('autohooks => {}'.format(git_hook_name))
 
     with autohooks_module_path(), term.indent():
         for name in config.get_pre_commit_script_names():
             term.info('Running {}'.format(name))
+            if git_hook_name.endswith('-test'):
+                continue
 
             with term.indent():
                 try:

@@ -14,15 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from math import floor, ceil
 import os
+import re
 import tempfile
+from typing import Optional
 import unittest
 
 from unittest.mock import Mock
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+from regex.regex import Match
 
 from autohooks.hooks import PreCommitHook, get_pre_commit_hook_path
 from autohooks.settings import Mode
@@ -102,24 +106,36 @@ class IsAutohooksPreCommitHook(unittest.TestCase):
 class IsCurrentAutohooksPreCommitHook(unittest.TestCase):
     def test_other_hook(self):
         path = FakeReadPath('foo\nbar')
-        pre_commit_hook = PreCommitHook(path)
+        pre_commit_hook = PreCommitHook(path, version=0)
 
         self.assertFalse(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
     def test_pre_commit_template(self):
         template = PreCommitTemplate()
         path = FakeReadPath(template.render(mode=Mode.PIPENV))
-        pre_commit_hook = PreCommitHook(path)
+        pre_commit_hook = PreCommitHook(path, version=TEMPLATE_VERSION)
 
         self.assertTrue(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
-    def test_modified_pre_commit_template(self):
+    def test_floor_pre_commit_template(self):
         template = PreCommitTemplate()
         rendered = template.render(mode=Mode.PIPENV)
-        lines = rendered.split('\n')
-        lines[1] = ""
-        path = FakeReadPath("\n".join(lines))
-        pre_commit_hook = PreCommitHook(path)
+        match: Optional[Match] = re.search(r'version = (\d+\.*\d*)', rendered)
+        self.assertIsNotNone(match)
+        hook_version = floor(float(match.group(1)))
+        path = FakeReadPath(rendered)
+        pre_commit_hook = PreCommitHook(path, version=hook_version)
+
+        self.assertTrue(pre_commit_hook.is_current_autohooks_pre_commit_hook())
+
+    def test_ceiling_pre_commit_template(self):
+        template = PreCommitTemplate()
+        rendered = template.render(mode=Mode.PIPENV)
+        match: Optional[Match] = re.search(r'version = (\d+\.*\d*)', rendered)
+        self.assertIsNotNone(match)
+        hook_version = ceil(float(match.group(1)))
+        path = FakeReadPath(rendered)
+        pre_commit_hook = PreCommitHook(path, version=hook_version)
 
         self.assertFalse(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
@@ -141,13 +157,13 @@ class ReadVersionTestCase(unittest.TestCase):
         path = FakeReadPath("")
         pre_commit_hook = PreCommitHook(path)
 
-        self.assertEqual(pre_commit_hook.read_version(), -1)
+        self.assertEqual(0, pre_commit_hook.read_version())
 
     def test_no_meta(self):
         path = FakeReadPath("\n# foo = bar")
         pre_commit_hook = PreCommitHook(path)
 
-        self.assertEqual(pre_commit_hook.read_version(), -1)
+        self.assertEqual(0, pre_commit_hook.read_version())
 
 
 class ReadModeTestCase(unittest.TestCase):

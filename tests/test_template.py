@@ -23,14 +23,13 @@ from autohooks.template import (
     get_pre_commit_hook_template_path,
 )
 
-DEFAULT_TEMPLATE = """#!/usr/bin/env python3
-# meta = { version = 1 }
-
+DEFAULT_TEMPLATE_1_1 = """#!/usr/bin/env python3
 import sys
 
 try:
     from autohooks.precommit import run
-    sys.exit(run())
+    version = 1.1
+    sys.exit(run(version, sys.argv))
 except ImportError:
     print(
         "Error: autohooks is not installed. To force creating a commit without "
@@ -53,7 +52,7 @@ class PreCommitTemplateTestCase(unittest.TestCase):
     def test_should_use_default_template(self):
         template = PreCommitTemplate()
         self.assertEqual(
-            template.render(mode=Mode.PYTHONPATH), DEFAULT_TEMPLATE
+            template.render(mode=Mode.PYTHONPATH), DEFAULT_TEMPLATE_1_1
         )
 
     def test_should_render_mode_pipenv(self):

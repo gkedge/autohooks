@@ -1,10 +1,11 @@
 #!$SHEBANG
+# meta = { version = $VERSION }
+
 import sys
 
 try:
     from autohooks.precommit import run
-    version = $VERSION
-    sys.exit(run(version, sys.argv))
+    sys.exit(run())
 except ImportError:
     print(
         "Error: autohooks is not installed. To force creating a commit without "

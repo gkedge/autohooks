@@ -41,7 +41,7 @@ POETRY_MULTILINE_SHEBANG = (
     "'''"
 )
 
-TEMPLATE_VERSION = 1
+TEMPLATE_VERSION = 1.1
 
 
 def get_pre_commit_hook_template_path() -> Path:
