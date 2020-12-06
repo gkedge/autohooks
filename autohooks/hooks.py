@@ -18,6 +18,8 @@ from math import ceil, floor
 from pathlib import Path
 import re
 
+from deprecated import deprecated
+
 from autohooks.settings import Mode
 from autohooks.template import (
     PIPENV_SHEBANG,
@@ -38,13 +40,13 @@ def get_pre_commit_hook_path():
 
 class PreCommitHook:
     def __init__(self, pre_commit_hook_path: Path = None, version=None) -> None:
-        self._version = version if version else self.read_version()
         self._pre_commit_hook = None
-
         if pre_commit_hook_path is None:
             self.pre_commit_hook_path = get_pre_commit_hook_path()
         else:
             self.pre_commit_hook_path = pre_commit_hook_path
+        self._version = version
+        self._legacy = version is None
 
     @property
     def pre_commit_hook(self) -> str:
@@ -56,6 +58,11 @@ class PreCommitHook:
     def exists(self) -> bool:
         return self.pre_commit_hook_path.exists()
 
+    @deprecated(
+        'No longer needed for template v1.1',
+        version='2.2.2',
+        category=FutureWarning,
+    )
     def is_autohooks_pre_commit_hook(self) -> bool:
         lines = self.pre_commit_hook.split('\n')
         return len(lines) > 5 and "autohooks.precommit" in self.pre_commit_hook
@@ -64,7 +71,7 @@ class PreCommitHook:
         release_template_ver = TEMPLATE_VERSION + 0.001
         return (
             floor(release_template_ver)
-            <= self._version
+            <= self.read_version()
             < ceil(release_template_ver)
         )
 
@@ -92,6 +99,9 @@ class PreCommitHook:
         return Mode.UNKNOWN
 
     def read_version(self) -> float:
+        if self._version:
+            return self._version
+
         matches = re.search(
             r'\s*version\s*=\s*?(\d+\.*\d*)\s*$',
             self.pre_commit_hook,

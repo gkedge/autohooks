@@ -17,9 +17,11 @@
 
 import os
 import unittest
+import warnings
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import wrapt
 
 from autohooks.utils import (
     exec_git,
@@ -222,3 +224,22 @@ class GetGitDirectoryPath(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def ignore_warning(warning=Warning):
+    @wrapt.decorator
+    def wrapper(wrapped, instance, args, kwargs):  # pylint: disable=unused-argument
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', warning)
+            # Also affect subprocesses
+            prior_python_warnings = os.environ.get("PYTHONWARNINGS")
+            os.environ["PYTHONWARNINGS"] = "default"
+
+            try:
+                result = wrapped(*args, **kwargs)
+            finally:
+                if prior_python_warnings:
+                    os.environ["PYTHONWARNINGS"] = prior_python_warnings
+            return result
+
+    return wrapper

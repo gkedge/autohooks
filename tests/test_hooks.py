@@ -18,15 +18,13 @@ from math import floor, ceil
 import os
 import re
 import tempfile
-from typing import Optional
+from typing import Optional, Match
 import unittest
 
 from unittest.mock import Mock
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-
-from regex.regex import Match
 
 from autohooks.hooks import PreCommitHook, get_pre_commit_hook_path
 from autohooks.settings import Mode
@@ -40,6 +38,7 @@ from autohooks.template import (
     TEMPLATE_VERSION,
 )
 from autohooks.utils import exec_git
+from tests.test_utils import ignore_warning
 
 
 class GitDirTestCase(unittest.TestCase):
@@ -88,13 +87,15 @@ class FakeReadPath:
         return self._text
 
 
-class IsAutohooksPreCommitHook(unittest.TestCase):
+class IsAutohooksLegacyPreCommitHook(unittest.TestCase):
+    @ignore_warning()
     def test_other_hook(self):
         path = FakeReadPath('foo\nbar')
         pre_commit_hook = PreCommitHook(path)
 
         self.assertFalse(pre_commit_hook.is_autohooks_pre_commit_hook())
 
+    @ignore_warning()
     def test_pre_commit_template(self):
         template = PreCommitTemplate()
         path = FakeReadPath(template.render(mode=Mode.PIPENV))
@@ -103,19 +104,34 @@ class IsAutohooksPreCommitHook(unittest.TestCase):
         self.assertTrue(pre_commit_hook.is_autohooks_pre_commit_hook())
 
 
-class IsCurrentAutohooksPreCommitHook(unittest.TestCase):
+class IsCurrentAutohooksLegacyPreCommitHook(unittest.TestCase):
     def test_other_hook(self):
         path = FakeReadPath('foo\nbar')
-        pre_commit_hook = PreCommitHook(path, version=0)
+        pre_commit_hook = PreCommitHook(path)
 
         self.assertFalse(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
     def test_pre_commit_template(self):
         template = PreCommitTemplate()
         path = FakeReadPath(template.render(mode=Mode.PIPENV))
-        pre_commit_hook = PreCommitHook(path, version=TEMPLATE_VERSION)
+        pre_commit_hook = PreCommitHook(path)
 
         self.assertTrue(pre_commit_hook.is_current_autohooks_pre_commit_hook())
+
+    def test_modified_pre_commit_template(self):
+        template = PreCommitTemplate()
+        rendered = template.render(mode=Mode.PIPENV, legacy_version=1)
+        match: Optional[Match] = re.search(
+            r'version\s*=\s*(\d+\.*\d*)', rendered
+        )
+        self.assertIsNotNone(match)
+        version_line_removed = re.sub(
+            r'version\s*=\s*(\d+\.*\d*)', '', rendered
+        )
+        path = FakeReadPath(version_line_removed)
+        pre_commit_hook = PreCommitHook(path)
+
+        self.assertFalse(pre_commit_hook.is_current_autohooks_pre_commit_hook())
 
     def test_floor_pre_commit_template(self):
         template = PreCommitTemplate()

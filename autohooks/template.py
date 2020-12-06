@@ -58,10 +58,12 @@ class PreCommitTemplate:
     def _load(self, template_path: Path) -> None:
         self._template = Template(template_path.read_text())
 
-    def render(self, *, mode: Mode) -> str:
+    def render(self, mode: Mode, legacy_version: float = None) -> str:
         mode = mode.get_effective_mode()
 
-        params = dict(VERSION=TEMPLATE_VERSION)
+        params = dict(
+            VERSION=TEMPLATE_VERSION if not legacy_version else legacy_version
+        )
 
         if mode == Mode.PIPENV:
             params['SHEBANG'] = PIPENV_SHEBANG
